@@ -1,0 +1,177 @@
+
+# One hot encoding with package recipes (tidymodels)
+
+Brief introudction to `recipes` 
+
+`recipes` package from `tidymodels` can help us automatizing some data preparation tasks.
+
+If you are new to R or you do a 1-time analysis, you could not see the main advantage of this, which is -in my opinion- to have most of the data preparation steps in one place. This way is easier to split between dev and prod. 
+
+Dev: The stage in which we create the model
+Prod: The moment in which we run the model with new data
+
+The other big advantage is it follows the _tidy_ phylosohpy, so many things will be familiar.
+
+
+## Using `recipes` for one hot encoding
+
+It is focus on one hot encoding, but many other functions like scaling, applying PCA and others can be performed.
+
+We have several functions:
+
+`recipe`, `step_dummy`, `prep`, `juice` and `bake`.
+
+### 1st - Create a `recipe`
+
+```{r}
+library(recipes)
+library(tidyverse)
+
+set.seed(3.1415)
+iris_tr=sample_frac(iris,size = 0.7)
+
+d_recipe = recipe( ~ ., data = iris_tr)
+
+d_recipe
+
+summary(d_recipe)
+```
+
+Due to the formula `~ .`, we specified all the variables are predictors (with no outcomes).
+
+Plesae note now we have two different data types, numeric and nominal (not factor nor character).
+
+### 2nd - Adding an step
+
+Now we add the step to create the dummy variables, or the one hot encoding, which can be seen as the same. 
+
+When we do the one hot encoding (`one_hot = T`), all the levels will be present in the final result. Conversely when we create the dummy variables, we could have all of the variables, or one less (to avoid the multicorrelation issue).
+
+
+```{r}
+d_recipe_2 = d_recipe %>% step_dummy(Species, one_hot = T)
+
+summary(d_recipe_2)
+```
+
+The summary returns the same as before.
+
+### 3rd - Do the `prep`
+
+`prep` is like putting all the ingredients togther, but we didn't cook yet! 
+
+It generates the metadata to do the data preparation. 
+
+as you can see here:
+
+```{r}
+# Aplico la receta, que tiene 1 step, a los datos
+d_prep=d_recipe_2 %>% prep(training = iris_tr, retain = T)
+
+d_prep
+```
+
+Note we are in the "training" or _dev_ stage. That's why we see the parameter `training`.
+
+We will see `retain = T` in the next step.
+
+Checking:
+
+```{r}
+summary(d_prep)
+```
+
+Whoila! We have the 3-new `derived` columns (one hot), and it removed the original `Species`.
+
+
+### 4th - Getting the data!
+
+Using `juice` function:
+
+```{r}
+d2=juice(d_prep)
+
+head(d2)
+```
+
+`juice` worked because we _retained_ the training data in the 3rd step (`retain = T`). Otherwise it would have returned:
+
+_Error: Use `retain = TRUE` in `prep` to be able to extract the training set`_
+
+
+
+
+### 5th - Apply the prep to new data
+
+Now imagine we have new data
+
+```{r}
+iris_new=sample_n(iris, size = 5) # taking 5 random rows
+
+d_baked=bake(d_prep, newdata = iris_new)
+
+d_baked
+```
+
+It worked!
+
+`bake` receives the `prep` object (`d_prep`) and it applies to the `newdata` (`iris_new`)
+
+### Just to mention...
+
+From this perspective given the training data, following data frames are the same:
+
+```{r}
+d_tr_1=bake(d_prep, newdata = iris_tr)
+d_tr_2=d2=juice(d_prep) # with retain=T
+
+identical(d_tr_1, d_tr_2)
+```
+
+## What happens when there are new values?
+
+Simulate a new value:
+
+```{r}
+new_row=iris[1,] %>% mutate(Species=as.character(Species))
+new_row[1, "Species"]="i will break your code"
+
+new_row
+```
+
+We use `bake` to convert the new data set:
+
+```{r}
+d2_b=bake(d_prep, newdata = new_row)
+```
+
+### The solution
+
+
+```{r}
+d_recipe2b = d_recipe_2 %>% step_other(iris_tr, Species, threshold = 0.000000000000001,  other = "other value")
+
+d_prep2b=d_recipe2b %>% prep(training = iris_tr, retain = T)
+
+
+d2_b=bake(d_prep, newdata = new_row)
+
+
+
+
+```
+
+
+
+## Conclusions
+
+
+
+### References:
+
+https://www.rstudio.com/resources/webinars/creating-and-preprocessing-a-design-matrix-with-recipes/
+https://tidymodels.github.io/recipes/articles/Simple_Example.html
+https://www.benjaminsorensen.me/post/modeling-with-parsnip-and-tidymodels/
+https://tidymodels.github.io/recipes/reference/step_other.html
+https://cran.r-project.org/web/packages/recipes/vignettes/Dummies.html#novel-levels
+

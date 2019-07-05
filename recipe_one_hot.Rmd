@@ -1,72 +1,80 @@
+# One hot encoding with `recipes` package
 
-# One hot encoding with package recipes (tidymodels)
+Since once of the best way to learn, is to explain, I want to share with you this quick introduction to `recipes` package, from the `tidymodels` family. 
+It can help us to automatize some data preparation tasks.
 
-Brief introudction to `recipes` 
+The overview is:
 
-`recipes` package from `tidymodels` can help us automatizing some data preparation tasks.
+- How to create a `recipe`
+- How to add a `step`
+- How to do the `prep`
+- Getting the data with `juice`!
+- Apply the prep to new data
+- What is the difference between `bake` and `juice`?
+- Dealing with new values in recipes (`step_novel`)
 
-If you are new to R or you do a 1-time analysis, you could not see the main advantage of this, which is -in my opinion- to have most of the data preparation steps in one place. This way is easier to split between dev and prod. 
+Since I'm new to this package, if you have something to add just put in the comments ;)
 
-Dev: The stage in which we create the model
-Prod: The moment in which we run the model with new data
+## Introduction
 
-The other big advantage is it follows the _tidy_ phylosohpy, so many things will be familiar.
+If you are new to R or you do a 1-time analysis, you could not see the main advantage of this, which is -in my opinion- to have most of the **data preparation** steps in one place. This way is easier to split between dev and prod. 
+
+* Dev: The stage in which we create the model
+* Prod: The moment in which we run the model with new data
+
+The other big advantage is it follows the _tidy_ philosophy, so many things will be familiar.
+
+## How to use `recipes` for one hot encoding
+
+It is focused on **one hot encoding**, but many other functions like scaling, applying PCA and others can be performed.
 
 
-## Using `recipes` for one hot encoding
+### 1st - How to create a `recipe`
 
-It is focus on one hot encoding, but many other functions like scaling, applying PCA and others can be performed.
-
-We have several functions:
-
-`recipe`, `step_dummy`, `prep`, `juice` and `bake`.
-
-### 1st - Create a `recipe`
-
-```{r}
+```{r, message=FALSE, warning=FALSE}
 library(recipes)
 library(tidyverse)
 
 set.seed(3.1415)
-iris_tr=sample_frac(iris,size = 0.7)
+iris_tr=sample_frac(iris, size = 0.7)
 
-d_recipe = recipe( ~ ., data = iris_tr)
+rec = recipe( ~ ., data = iris_tr)
 
-d_recipe
+rec
 
-summary(d_recipe)
+summary(rec)
 ```
 
-Due to the formula `~ .`, we specified all the variables are predictors (with no outcomes).
+The formula `~ .`,  specifies that all the variables are predictors (with no outcomes).
 
-Plesae note now we have two different data types, numeric and nominal (not factor nor character).
+Please note now we have two different data types, numeric and nominal (not factor nor character).
 
-### 2nd - Adding an step
+### 2nd - How to add a step
 
 Now we add the step to create the dummy variables, or the one hot encoding, which can be seen as the same. 
 
-When we do the one hot encoding (`one_hot = T`), all the levels will be present in the final result. Conversely when we create the dummy variables, we could have all of the variables, or one less (to avoid the multicorrelation issue).
+When we do the one hot encoding (`one_hot = T`), all the levels will be present in the final result. Conversely, when we create the dummy variables, we could have all of the variables, or one less (to avoid the multi-correlation issue).
 
 
 ```{r}
-d_recipe_2 = d_recipe %>% step_dummy(Species, one_hot = T)
+rec_2 = rec %>% step_dummy(Species, one_hot = T)
 
-summary(d_recipe_2)
+rec_2
 ```
 
-The summary returns the same as before.
+Now we see the dummy step.
 
-### 3rd - Do the `prep`
+### 3rd - How to do the `prep`
 
-`prep` is like putting all the ingredients togther, but we didn't cook yet! 
+`prep` is like putting all the ingredients together, but we didn't cook yet! 
 
 It generates the metadata to do the data preparation. 
 
-as you can see here:
+As we can see here:
 
 ```{r}
 # Aplico la receta, que tiene 1 step, a los datos
-d_prep=d_recipe_2 %>% prep(training = iris_tr, retain = T)
+d_prep=rec_2 %>% prep(training = iris_tr, retain = T)
 
 d_prep
 ```
@@ -84,7 +92,7 @@ summary(d_prep)
 Whoila! We have the 3-new `derived` columns (one hot), and it removed the original `Species`.
 
 
-### 4th - Getting the data!
+### 4th - Getting the data with `juice`!
 
 Using `juice` function:
 
@@ -97,8 +105,6 @@ head(d2)
 `juice` worked because we _retained_ the training data in the 3rd step (`retain = T`). Otherwise it would have returned:
 
 _Error: Use `retain = TRUE` in `prep` to be able to extract the training set`_
-
-
 
 
 ### 5th - Apply the prep to new data
@@ -117,7 +123,7 @@ It worked!
 
 `bake` receives the `prep` object (`d_prep`) and it applies to the `newdata` (`iris_new`)
 
-### Just to mention...
+### What is the difference between `bake` and `juice`?
 
 From this perspective given the training data, following data frames are the same:
 
@@ -128,7 +134,7 @@ d_tr_2=d2=juice(d_prep) # with retain=T
 identical(d_tr_1, d_tr_2)
 ```
 
-## What happens when there are new values?
+## Dealing with new values in recipes
 
 Simulate a new value:
 
@@ -145,33 +151,57 @@ We use `bake` to convert the new data set:
 d2_b=bake(d_prep, newdata = new_row)
 ```
 
-### The solution
+### The solution! Use `step_novel`
 
+(Thanks to Max Kuhn)
+
+When we do the `prep`, we have to add `step_novel`. So any new value will be assigned to the `_new` category.
+
+We will start right from the beginning:
 
 ```{r}
-d_recipe2b = d_recipe_2 %>% step_other(iris_tr, Species, threshold = 0.000000000000001,  other = "other value")
+rec_2_bis = recipe( ~ ., data = iris_tr) %>% 
+  step_novel(Species) %>% 
+  step_dummy(Species, one_hot = T)
 
-d_prep2b=d_recipe2b %>% prep(training = iris_tr, retain = T)
-
-
-d2_b=bake(d_prep, newdata = new_row)
-
-
-
-
+prep_bis = prep(rec_2_bis, training = iris_tr)
 ```
 
+Get to final data, and check it:
 
+```{r}
+processed = bake(prep_bis, iris_tr)
+
+funModeling::df_status(processed)
+```
+
+Please note that `Species_new` has been automatically created (with zeros). 
+This ensures the **correct run once** in production.
+
+Now let's see what happen when we have the new value:
+
+```{r}
+new_row_2=bake(prep_bis, newdata = new_row)
+
+new_row_2 %>% select(Species_new)
+```
+
+It works!
 
 ## Conclusions
 
+The `recipes` package seems to be a good way to standardize certain data preparation tasks. 
+Probably one of the strongest points in R, alongside the `dplyr` package. 
 
+I tried to cover with simple and reproducible examples, many of the situations that happen when we work with productive environments, in the [Data Science Live Book](https://livebook.datascienceheroes.com) (open-source).
+
+Have fun :) 
+
+You can found me at: [Linkedin](https://www.linkedin.com/in/pcasas/) & [Twitter](https://twitter.com/pabloc_ds).
 
 ### References:
 
-https://www.rstudio.com/resources/webinars/creating-and-preprocessing-a-design-matrix-with-recipes/
-https://tidymodels.github.io/recipes/articles/Simple_Example.html
-https://www.benjaminsorensen.me/post/modeling-with-parsnip-and-tidymodels/
-https://tidymodels.github.io/recipes/reference/step_other.html
-https://cran.r-project.org/web/packages/recipes/vignettes/Dummies.html#novel-levels
+* [Basic recipes example](https://tidymodels.github.io/recipes/articles/Simple_Example.html)
+* [Modeling with parsnip and tidymodels](https://www.benjaminsorensen.me/post/modeling-with-parsnip-and-tidymodels/) by Benjamin Sorensen.
+* [Creating and Preprocessing a Design Matrix with Recipes](https://www.rstudio.com/resources/webinars/creating-and-preprocessing-a-design-matrix-with-recipes/) (video)
 

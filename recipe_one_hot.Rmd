@@ -113,7 +113,7 @@ head(d2)
 
 `juice` worked because we _retained_ the training data in the 3rd step (`retain = T`). Otherwise it would have returned:
 
-`r emo::ji("warning")` _Error: Use `retain = TRUE` in `prep` to be able to extract the training set`_
+`r emo::ji("warning")` _Error: Use `retain = TRUE` in `prep` to be able to extract the training set_
 
 
 ### 5th - Apply the prep to new data

@@ -28,6 +28,15 @@ The other big advantage is it follows the _tidy_ philosophy, so many things will
 
 It is focused on **one hot encoding**, but many other functions like scaling, applying PCA and others can be performed.
 
+But first, **what is one hot encoding?**
+
+It's a data preparation technique to convert all the categorical variables into numerical, by assigning a value of `1` when the row belongs to the category. If the variable has 100 unique values, the final result will contain 100 columns. 
+
+<img src="https://blog.datascienceheroes.com/content/images/2019/07/one-hot-encoding.png" width="300px">
+
+That's why it is a **good practice to reduce the cardinality** of the variable before continuing Learn more about it in the [High Cardinality Variable in Predictive Modeling](https://livebook.datascienceheroes.com/data-preparation.html#high_cardinality_predictive_modeling) from the _Data Science Live Book_ `r emo::ji("green_book")`.
+
+Let's start the example with recipes!
 
 ### 1st - How to create a `recipe`
 
@@ -51,7 +60,7 @@ Please note now we have two different data types, numeric and nominal (not facto
 
 ### 2nd - How to add a step
 
-Now we add the step to create the dummy variables, or the one hot encoding, which can be seen as the same. 
+Now we add the step to create the dummy variables, or the **one hot encoding**, which can be seen as the same. 
 
 When we do the one hot encoding (`one_hot = T`), all the levels will be present in the final result. Conversely, when we create the dummy variables, we could have all of the variables, or one less (to avoid the multi-correlation issue).
 
@@ -66,7 +75,7 @@ Now we see the dummy step.
 
 ### 3rd - How to do the `prep`
 
-`prep` is like putting all the ingredients together, but we didn't cook yet! 
+`prep` is like putting all the ingredients together, _but we didn't cook yet!_ 
 
 It generates the metadata to do the data preparation. 
 
@@ -89,7 +98,7 @@ Checking:
 summary(d_prep)
 ```
 
-Whoila! We have the 3-new `derived` columns (one hot), and it removed the original `Species`.
+**Whoila!** `r emo::ji("tada")` We have the 3-new `derived` columns (one hot), and it removed the original `Species`.
 
 
 ### 4th - Getting the data with `juice`!
@@ -104,12 +113,12 @@ head(d2)
 
 `juice` worked because we _retained_ the training data in the 3rd step (`retain = T`). Otherwise it would have returned:
 
-_Error: Use `retain = TRUE` in `prep` to be able to extract the training set`_
+`r emo::ji("warning")` _Error: Use `retain = TRUE` in `prep` to be able to extract the training set`_
 
 
 ### 5th - Apply the prep to new data
 
-Now imagine we have new data
+Now imagine we have **new data** as follows:
 
 ```{r}
 iris_new=sample_n(iris, size = 5) # taking 5 random rows
@@ -175,8 +184,9 @@ processed = bake(prep_bis, iris_tr)
 funModeling::df_status(processed)
 ```
 
-Please note that `Species_new` has been automatically created (with zeros). 
-This ensures the **correct run once** in production.
+Please note that `Species_new` **has been automatically created** (with zeros). 
+
+`r emo::ji("point_right")` This ensures it **runs well once** in production.
 
 Now let's see what happen when we have the new value:
 
@@ -188,16 +198,18 @@ new_row_2 %>% select(Species_new)
 
 It works!
 
-## Conclusions
+## Conclusions `r emo::ji("bulb")`
 
 The `recipes` package seems to be a good way to standardize certain data preparation tasks. 
 Probably one of the strongest points in R, alongside the `dplyr` package. 
 
-I tried to cover with simple and reproducible examples, many of the situations that happen when we work with productive environments, in the [Data Science Live Book](https://livebook.datascienceheroes.com) (open-source).
+`r emo::ji("pushpin")` Take care of the **data pipeline**, it is what interviewers will ask you for.
 
-Have fun :) 
+I tried to cover with simple and reproducible examples, many of the situations that happen when we work with productive environments, in the [Data Science Live Book](https://livebook.datascienceheroes.com) `r emo::ji("green_book")` (open-source).
 
-You can found me at: [Linkedin](https://www.linkedin.com/in/pcasas/) & [Twitter](https://twitter.com/pabloc_ds).
+Have fun `r emo::ji("rocket")`
+
+`r emo::ji("mailbox_with_mail")` You can found me at: [Linkedin](https://www.linkedin.com/in/pcasas/) & [Twitter](https://twitter.com/pabloc_ds).
 
 ### References:
 
@@ -205,3 +217,7 @@ You can found me at: [Linkedin](https://www.linkedin.com/in/pcasas/) & [Twitter]
 * [Modeling with parsnip and tidymodels](https://www.benjaminsorensen.me/post/modeling-with-parsnip-and-tidymodels/) by Benjamin Sorensen.
 * [Creating and Preprocessing a Design Matrix with Recipes](https://www.rstudio.com/resources/webinars/creating-and-preprocessing-a-design-matrix-with-recipes/) (video)
 
+### Other posts you might like `r emo::ji("nerd_face")`...
+
+* `r emo::ji("mag")` [Model interpretability with SHAP](https://blog.datascienceheroes.com/how-to-interpret-shap-values-in-r/)
+* `r emo::ji("bar_chart")` [Supervized binning](https://blog.datascienceheroes.com/discretization-recursive-gain-ratio-maximization/)
